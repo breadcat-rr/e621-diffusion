@@ -35,7 +35,7 @@ class ImageE621:
         return f"<ImageE621 (Id: {self.id}, Tags: {self.tags[:10]})>"
 
     async def save_image(self, location: str = ""):
-        """ Resizes and saves image, also updates the data.json file"""
+        """ Saves image, also updates the data.json file"""
         if self.url == None:
             print("Blocked post. Failed to download")
             return False
@@ -43,7 +43,7 @@ class ImageE621:
         filename = f"{self.id}.{self.url.split('.')[-1]}"
 
         if filename in ImageE621.downloaded:
-            print("Image already exists, skipping.")
+            print("Image already exists, skipping.",end="                \r")
             return False
         
         async with ImageE621.session.get(self.url) as resp:
@@ -82,7 +82,7 @@ class ImageE621:
 async def main():
    
     s = aiohttp.ClientSession()
-    downloaded = os.listdir("img")
+    downloaded = os.listdir("raw")
 
     with open("index", "a+") as f:
         f.seek(0)
@@ -121,7 +121,7 @@ async def main():
             return
         
         await asyncio.sleep(0.4)
-        
+
         r = requests.get('https://e621.net/posts.json', params=params, headers=headers)
         
         if r.ok:
@@ -138,9 +138,10 @@ async def main():
             for i, p in enumerate(posts):
                 call_time = time.time()
 
-                print(f"Fetching image {index + i} on page {params['page']}")
+                print(f"Fetching image {index + i} on page {params['page']}",end="         \r")
                 success = await p.save_image()
-                
+                print(f"Fetched image {index + i} on page {params['page']}",end="         \r")
+
                 if success == False:
                     await asyncio.sleep(1/75)
                 else:
@@ -163,6 +164,7 @@ if __name__ == '__main__':
         description='Fetch all images from e621 according to --search')
     parser.add_argument('--dest', help="Save location", required=False)
     parser.add_argument('--search', required=False)
+    parser.add_argument('--start',type=int, required=False)
 
     parser.add_argument('--reset',action='store_true', required=False)
     args = parser.parse_args()
@@ -170,7 +172,7 @@ if __name__ == '__main__':
     if args.search != None:
         search = args.search
     else:
-        search = "-animated -not_furry_focus -meme order:score rating:s score:>100"
+        search = "-animated -not_furry_focus -meme order:score rating:s score:>50"
         print(f'Search not provided, using default: "{search}"')
     
     if args.reset:
@@ -185,7 +187,11 @@ if __name__ == '__main__':
         except: pass
         try: shutil.rmtree("img")
         except: pass
-        
+       
+    if args.start:
+        print(f"Setting start position to {args.start}")
+        with open("index", "w+") as f:
+            f.write(str(args.start))
     
     # Create necessary folders if they don't exist
     cur_folder = os.listdir()
