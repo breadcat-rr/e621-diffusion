@@ -1,0 +1,9 @@
+txt
+img
+raw
+txt/*
+img/*
+raw/*
+data.json
+index
+*.log
